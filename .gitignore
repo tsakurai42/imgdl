@@ -1,0 +1,6 @@
+.ipynb_checkpoints\
+\images
+\json
+*.jpg
+*.txt
+*.ipynb
