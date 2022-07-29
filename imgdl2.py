@@ -1,4 +1,5 @@
 from requests import get
+import os.path
 # from bs4 import BeautifulSoup
 import re
 import time
@@ -12,24 +13,35 @@ url_file = open('urls.txt','a')
 files = [file for file in glob.glob('json/*')]
 for file_num, file_name in enumerate(files):
     f0 = open(file_name,encoding='utf-8')
-    f1 = json.load(f0)
-    g = f1['data']['bookmark_timeline']['timeline']['instructions'][0]['entries']
-    for _ in g:
-        if 'tweet' in _['entryId']:
-            url_original = _['content']['itemContent']['tweet_results']['result']['legacy']['entities']['media'][0]['media_url_https']
-            try:
-                url_original = _['content']['itemContent']['tweet_results']['result']['legacy']['entities']['media'][0]['media_url_https']
-                url_split = url_original.rsplit('.', 1)
-                url = f'{url_split[0]}?format={url_split[1]}&name=orig'
-                expanded_url_original = _['content']['itemContent']['tweet_results']['result']['legacy']['entities']['media'][0]['expanded_url']
-                expanded_url = expanded_url_original[8:-8]
-                print(expanded_url)
-                # screenname = _['content']['itemContent']['tweet_results']['result']['core']['user_results']['result']['legacy']['screen_name']
-                # tweet_id = _['content']['itemContent']['tweet_results']['result']['rest_id']
-                # url_file.write(f'https://twitter.com/{screenname}/status/{tweet_id}\n')
-                url_file.write(f'{url}###{expanded_url}\n')
-            except:
-                continue
+    for line in f0:
+        f1 = json.loads(line)
+        if 'data' in f1:
+            g = f1['data']['bookmark_timeline']['timeline']['instructions'][0]['entries']
+            for _ in g:
+                if 'tweet' in _['entryId']:
+                    url_original = _['content']['itemContent']['tweet_results']['result']['legacy']['entities']['media'][0]['media_url_https']
+                    try:
+                        url_original = _['content']['itemContent']['tweet_results']['result']['legacy']['entities']['media'][0]['media_url_https']
+                        url_split = url_original.rsplit('.', 1)
+                        url = f'{url_split[0]}?format={url_split[1]}&name=orig'
+                        expanded_url_original = _['content']['itemContent']['tweet_results']['result']['legacy']['entities']['media'][0]['expanded_url']
+                        expanded_url = expanded_url_original[8:-8]
+                        url_file.write(f'{url}###{expanded_url}\n')
+                    except:
+                        continue
+        elif 'itemList' in f1:
+            g = f1['itemList']
+            print(len(g))
+            for _ in g:
+                tiktok_id = _['id']
+                tiktok_desc = re.sub(r"[^A-Za-z0-9 #!]+","",_['desc'])
+                tiktok_videourl = _['video']['downloadAddr']
+                tiktok_author = _['author']['uniqueId']
+                try:
+                    url_file.write(f'{tiktok_id}###{tiktok_videourl}###{tiktok_desc}###{tiktok_author}\n')
+                except:
+                    print(tiktok_desc)
+                    continue
 url_file.close()
 
 f = open('urls.txt', 'r')
@@ -38,86 +50,41 @@ f.close()
 total_dl = len(url_list)
 for count, pre_url in enumerate(url_list):
     url = pre_url.split('###')
-    print(f'Downloading #{count+1} of {total_dl}: {url[1]}')
-    # browser.visit(url)
-    # time.sleep(2)
-    # soup = BeautifulSoup(browser.html, 'html.parser')
-    # domain = url.split('/')[2]
-    # if 'instagram' in domain:
-    #     print(domain)
-    #     img_html = soup.find_all('img')
-    #     img_url = img_html[0].get('src')
-    #     print(img_url)
-    #     req = get(img_url)
-    #     file = open(f'images/{url.split("://")[1][4:].replace("/", "")}.jpg', 'wb')
-    #     for chunk in req.iter_content(1000000):
-    #         file.write(chunk)
-    #     file.close()
-    #
-    # elif 'twitter' in domain:
-    #     try:
-    #         prim_div = soup.find_all('div', attrs={
-    #             'style': 'transform: translateY(0px); position: absolute; width: 100%; transition: opacity 0.3s ease-out 0s;'})[
-    #             0]
-    #     except:
-    #         print(f"Couldn't find the right div for images")
-    #         f = open('manual.txt', 'a')
-    #         f.write(f'{url[8:]}\n')
-    #         f.close()
-    #         continue
-    #     if prim_div.findAll(
-    #             text='Age-restricted adult content. This content might not be appropriate for people under 18 years old. To view this media, you’ll need to '):
-    #         print(f'Age-restricted, Written to manual.txt')
-    #         f = open('manual.txt', 'a')
-    #         f.write(f'{url[8:]}\n')
-    #         f.close()
-    #
-    #         continue
-    #
-    #     if prim_div.findAll(text='The following media includes potentially sensitive content. '):
-    #         # XPath of the view button
-    #         # xpath = '/html/body/div[1]/div/div/div[2]/main/div/div/div/div[1]/div/section/div/div/div[1]/div/div/article/div/div/div/div[3]/div[2]/div/div/div/div/div/div/div/div/div/div/div[2]/div/div[2]/div/div/span/span'
-    #         # xpath = '/html/body/div[1]/div/div/div[2]/main/div/div/div/div[1]/div/section/div/div/div[1]/div/div/article/div/div/div/div[3]/div[2]/div/div/div/div/div/div/div/div/div/div/div/div[2]/div/div[2]/div/div/span/span'
-    #         xpath = '/html/body/div[1]/div/div/div[2]/main/div/div/div/div/div/section/div/div/div[1]/div/div/div/article/div/div/div/div[3]/div[2]/div/div/div/div/div/div/div/div/div/div/div/div[2]/div/div[2]/div/div/span/span'
-    #         try:
-    #             browser.find_by_xpath(xpath).first.click()
-    #             time.sleep(1)
-    #             soup = BeautifulSoup(browser.html, 'html.parser')
-    #             prim_div = soup.find_all('div', attrs={
-    #                 'style': 'transform: translateY(0px); position: absolute; width: 100%; transition: opacity 0.3s ease-out 0s;'})[
-    #                 0]
-    #         except:
-    #             print(f"XPath may have changed? Written to redo.txt")
-    #             f = open('redo.txt', 'a')
-    #             f.write(f'{url[8:]}\n')
-    #             f.close()
-    #             continue
-    #
-    #     try:
-    #         img_url = prim_div.select_one('img[alt="Image"]').get('src')
-    #     except:
-    #         print("Couldn't find the image, maybe it has alt text")
-    #         f = open('manual.txt', 'a')
-    #         f.write(f'{url[8:]}\n')
-    #         f.close()
-    #         continue
-    #     split_url = re.split('[?&]', img_url)
-    #     img_url = f'{split_url[0]}?{split_url[1]}&name=orig'
+    if len(url) == 2:
+        print(f'Downloading #{count + 1} of {total_dl}: {url[1]}',flush=True)
+        req = get(url[0])
+        if req.status_code != 200:
+            for _ in range(3):
+                req = get(url[0])
+                if req.status_code == 200:
+                    break
+            print(req.status_code)
+            f2 = open('redo.txt', 'a')
+            f2.write(f'{url[1]}\n')
+            f2.close()
 
-    req = get(url[0])
-    if req.status_code != 200:
-        for _ in range(3):
-            req = get(url[0])
-            if req.status_code == 200:
-                break
-        print(req.status_code)
-        f2 = open('redo.txt', 'a')
-        f2.write(f'{url[1]}\n')
-        f2.close()
-
-    file = open(f'{url[1].replace("/","")}.jpg', 'wb')
-    for chunk in req.iter_content(1000000):
-        file.write(chunk)
-    file.close()
-
-# browser.quit()
+        file = open(f'{url[1].replace("/","")}.jpg', 'wb')
+        for chunk in req.iter_content(1000000):
+            file.write(chunk)
+        file.close()
+    elif len(url) == 4:
+        print(f'Downloading #{count + 1} of {total_dl}: @{url[3]} - {url[0]}',flush=True)
+        if os.path.isfile(f'@{url[3]} - {url[0]} - {url[2][:40]}.mp4'):
+            print('already downloaded')
+            continue
+        req = get(url[1])
+        if req.status_code != 200:
+            for _ in range(3):
+                req = get(url[1])
+                if req.status_code == 200:
+                    break
+            print(req.status_code)
+            f2 = open('redo.txt', 'a')
+            f2.write(f'tiktok.com/@{url[3]}/video/{url[0]}\n')
+            f2.close()
+        file = open(f'@{url[3]} - {url[0]} - {url[2][:40]}.mp4', 'wb')
+        for chunk in req.iter_content(1000000):
+            file.write(chunk)
+        file.close()
+    else:
+        print('wtf?')

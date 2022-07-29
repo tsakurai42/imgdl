@@ -132,6 +132,8 @@ dmypy.json
 .ipynb_checkpoints\
 \images
 \json
+\tiktok
+*.mp4
 *.jpg
 *.txt
 *.ipynb
