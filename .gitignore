@@ -136,6 +136,9 @@ dmypy.json
 *.json
 *.mp4
 *.jpg
+*.png
 *.txt
 *.ipynb
+*vars.py
 >>>>>>> 00705335c8f374979f0a8e7ae8c2fc033878b61e
+
