@@ -16,23 +16,31 @@ for file_num, file_name in enumerate(files):
     f0 = open(file_name,encoding='utf-8')
     for line in f0:
         f1 = json.loads(line)
-        if 'data' in f1:
+        if 'data' in f1:  #twitter json has bookmark_timeline tiktok doesnt
+            print('twitter!')
             g = f1['data']['bookmark_timeline']['timeline']['instructions'][0]['entries']
             for _ in g:
                 if 'tweet' in _['entryId']:
                     try:
-                        if 'thumb' in _['content']['itemContent']['tweet_results']['result']['legacy']['entities']['media'][0]['media_url_https']:
-                            continue
-                        url_to_write = 'twitter#$%$#'
+
                         expanded_url = _['content']['itemContent']['tweet_results']['result']['legacy']['entities']['media'][0][
                             'expanded_url'][8:-8]
+                        url_to_write = 'twitter#$%$#'
                         url_to_write += f'{expanded_url}'
-                        for each_dict in _['content']['itemContent']['tweet_results']['result']['legacy']['entities']['media']:
-                            # print(each_dict)
-                            # print(each_dict['media_url_https'])
-                            url_split = each_dict['media_url_https'].rsplit('.',1)
-                            url = f'{url_split[0]}?format={url_split[1]}&name=orig'
-                            url_to_write += f'#$%$#{url}'
+                        if 'thumb' in _['content']['itemContent']['tweet_results']['result']['legacy']['entities']['media'][0]['media_url_https']:
+                            max_bitrate = 0
+                            best_bitrate_url = ''
+                            for each_variant in _['content']['itemContent']['tweet_results']['result']['legacy']['extended_entities']['media'][0]['video_info']['variants']:
+                                if 'bitrate' in each_variant:
+                                    if each_variant['bitrate'] > max_bitrate:
+                                        best_bitrate_url = f"#$%$#{each_variant['url']}"
+                                        max_bitrate = each_variant['bitrate']
+                            url_to_write += best_bitrate_url
+                        else:
+                            for each_dict in _['content']['itemContent']['tweet_results']['result']['legacy']['entities']['media']:
+                                url_split = each_dict['media_url_https'].rsplit('.',1)
+                                url = f'{url_split[0]}?format={url_split[1]}&name=orig'
+                                url_to_write += f'#$%$#{url}'
 
                         # for _ in range(len(_['content']['itemContent']['tweet_results']['result']['legacy']['entities']['media'])):
                         #     url_original = _['content']['itemContent']['tweet_results']['result']['legacy']['entities']['media'][_]['media_url_https']
@@ -43,6 +51,7 @@ for file_num, file_name in enumerate(files):
                     except:
                         continue
         elif 'itemList' in f1:      #tiktoks have an itemlist
+            print('tiktok!')
             for _ in f1['itemList']:
                 tiktok_id = _['id']
                 tiktok_desc = re.sub(r"[^A-Za-z0-9 #!]+","",_['desc'])
@@ -85,7 +94,10 @@ for count, pre_url in enumerate(url_list):
             if len(url) == 3:
                 file = open(f'{url[1].replace("/","")}.jpg', 'wb')
             else:
-                file = open(f'{url[1].replace("/", "")} {each_image-1}.jpg', 'wb')
+                if 'pbs.twimg.com' in url[each_image]:
+                    file = open(f'{url[1].replace("/", "")} {each_image-1}.jpg', 'wb')
+                elif 'video.twimg.com' in url[each_image]:
+                    file = open(f'{url[1].replace("/", "")} {each_image - 1}.mp4', 'wb')
             for chunk in req.iter_content(1000000):
                 file.write(chunk)
             file.close()
